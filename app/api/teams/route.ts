@@ -14,33 +14,21 @@ export async function GET() {
       ncSos: row.ncSos ?? null,
       sorSeed: row.sorSeed ?? null,
       sorCurve: row.sorCurve ?? null,
-      qualityWins: row.qualityWins ?? null,
-      conference: null,
-      netRank: null,
-      roadRecord: null,
-      neutralRecord: null,
-      homeRecord: null,
-      nonDivIRecord: null,
-      prevNetRank: null,
-      quad1Wins: null,
-      quad1Losses: null,
-      quad2Wins: null,
-      quad2Losses: null,
-      quad3Wins: null,
-      quad3Losses: null,
-      quad4Wins: null,
-      quad4Losses: null
+      qualityWins: row.qualityWins ?? null
     }));
 
-    return NextResponse.json({ ok: true, teams });
+    return NextResponse.json({
+      ok: true,
+      count: teams.length,
+      teams
+    });
   } catch (error) {
-    console.error("TEAMS API ERROR:", error);
-
     return NextResponse.json(
       {
         ok: false,
-        teams: [],
-        error: error instanceof Error ? error.message : String(error)
+        route: "teams",
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : null
       },
       { status: 200 }
     );
