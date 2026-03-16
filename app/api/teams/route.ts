@@ -1,39 +1,39 @@
 import { NextResponse } from "next/server";
-import { fetchEspnResumeRows } from "../../../lib/sources/espnResume";
-import { TeamProfile } from "../../../lib/types";
-
-function buildResumeScore(team: TeamProfile) {
-  const winPct = team.wins / Math.max(team.wins + team.losses, 1);
-  const sorComponent = team.sor ? Math.max(0, 120 - team.sor) : 40;
-  const sosComponent = team.sos ? Math.max(0, 110 - team.sos) : 35;
-  const ncSosComponent = team.ncSos ? Math.max(0, 110 - team.ncSos) : 35;
-  const qualityMatch = team.qualityWins?.match(/(\d+)-(\d+)/);
-  const qualityWins = qualityMatch ? Number(qualityMatch[1]) : 0;
-  return Number((winPct * 50 + sorComponent * 0.35 + sosComponent * 0.15 + ncSosComponent * 0.05 + qualityWins * 2.5).toFixed(2));
-}
+import { fetchNcaaNetTeams } from "../../../lib/sources/ncaaNet";
+import { fetchEspnResumeRows } from "../../../lib/sources/espnBpi";
 
 export async function GET() {
   try {
-    const rows = await fetchEspnResumeRows();
-    const teams: TeamProfile[] = rows.map((row) => ({
-      ...row,
-      winPct: Number((row.wins / Math.max(row.wins + row.losses, 1)).toFixed(4)),
-      resumeScore: 0
-    })).map((row) => ({ ...row, resumeScore: buildResumeScore(row) }));
+    const netData = await fetchNcaaNetTeams();
+    const resumeData = await fetchEspnResumeRows();
 
-    return NextResponse.json({
-      ok: true,
-      fetchedAt: new Date().toISOString(),
-      teamCount: teams.length,
-      teams
+    const teams = netData.map((team) => {
+      const match = resumeData.find(
+        (row) => row.team.toLowerCase() === team.team.toLowerCase()
+      );
+
+      return {
+        ...team,
+        sor: match?.sor ?? null,
+        sos: match?.sos ?? null,
+        ncSos: match?.ncSos ?? null,
+        sorSeed: match?.sorSeed ?? null,
+        sorCurve: match?.sorCurve ?? null,
+        qualityWins: match?.qualityWins ?? null
+      };
     });
+
+    return NextResponse.json({ ok: true, teams });
   } catch (error) {
+    console.error("TEAMS API ERROR:", error);
+
     return NextResponse.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : "Failed to fetch teams"
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : null
       },
-      { status: 500 }
+      { status: 200 }
     );
   }
 }
