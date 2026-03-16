@@ -1,27 +1,36 @@
 import { NextResponse } from "next/server";
-import { fetchNcaaNetTeams } from "../../../lib/sources/ncaaNet";
-import { fetchEspnResumeRows } from "../../../lib/sources/espnBpi";
+import { fetchEspnResumeRows } from "../../../lib/sources/espnResume";
 
 export async function GET() {
   try {
-    const netData = await fetchNcaaNetTeams();
     const resumeData = await fetchEspnResumeRows();
 
-    const teams = netData.map((team) => {
-      const match = resumeData.find(
-        (row) => row.team.toLowerCase() === team.team.toLowerCase()
-      );
-
-      return {
-        ...team,
-        sor: match?.sor ?? null,
-        sos: match?.sos ?? null,
-        ncSos: match?.ncSos ?? null,
-        sorSeed: match?.sorSeed ?? null,
-        sorCurve: match?.sorCurve ?? null,
-        qualityWins: match?.qualityWins ?? null
-      };
-    });
+    const teams = resumeData.map((row) => ({
+      team: row.team,
+      wins: row.wins,
+      losses: row.losses,
+      sor: row.sor ?? null,
+      sos: row.sos ?? null,
+      ncSos: row.ncSos ?? null,
+      sorSeed: row.sorSeed ?? null,
+      sorCurve: row.sorCurve ?? null,
+      qualityWins: row.qualityWins ?? null,
+      conference: null,
+      netRank: null,
+      roadRecord: null,
+      neutralRecord: null,
+      homeRecord: null,
+      nonDivIRecord: null,
+      prevNetRank: null,
+      quad1Wins: null,
+      quad1Losses: null,
+      quad2Wins: null,
+      quad2Losses: null,
+      quad3Wins: null,
+      quad3Losses: null,
+      quad4Wins: null,
+      quad4Losses: null
+    }));
 
     return NextResponse.json({ ok: true, teams });
   } catch (error) {
@@ -30,8 +39,8 @@ export async function GET() {
     return NextResponse.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : null
+        teams: [],
+        error: error instanceof Error ? error.message : String(error)
       },
       { status: 200 }
     );
